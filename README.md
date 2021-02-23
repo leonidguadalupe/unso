@@ -54,6 +54,26 @@ flask db upgrade
 run this docker command to put add fixtures to db
 docker exec -i unsodb psql -U xeneta postgresdb < rates.sql 
 
+### Price get & post API
+This is how you form your POST request. In the body of the request, you need these keys.
+"currency" parameter is optional and you should use a proper currency code to enable sending
+to 
+```json
+{
+  "date_to": "2020-02-22",
+  "date_from": "2020-02-22",
+  "price": 5678,
+  "origin": "CNGGZ",
+  "currency": "AED",
+  "destination": "BEANR"
+}
+```
+And you will be sending that post request to this endpoint:
+http://localhost:8000/prices
+
+For the get requests, it will remain the same as how things are designed in the test itself.
+
+
 ## BATCH Processing question
 To perform batch processing, there are some things that we would need to consider:
 1. How often do we need to move data?
@@ -62,4 +82,4 @@ To perform batch processing, there are some things that we would need to conside
 
 My thought process for this is we need to determine first where the data comes from. Then, if we need to run it more than once a day, it would be great if we could use Celery to create a task to run the code or the script that fetches data from the source and finally add a heartbeat to perform polling. Ideally, it can also be used to automate the downloading of the file from a cdn by any case it is not available via http, ssh or soap. If the source is a database, we can check when the data is updated (if that "updated" column is available), and in every sync we do, we store that value somewhere so we dont have to redownload data that hasnt changed during that period by filtering through that datetime object. Also, to speed up the creation of data, we can create a virtual tsv file, put the contents of the fetched data from source in there and do a postgres "copy from" that simply compies from the virtual store towards our database (I have benchmarked this approach a couple of times and it's the fastest if you want to move millions of data).
 
-Another approach for me (with a capable team and a good budget) is we can deploy Kafka connectors to the sources and install [Debezium](https://debezium.io/documentation/reference/index.html) in our environment. This approach checks for any changes in the database source and then records those changes in the stream which we can respond from as consumers. Every change logged will be moved in our databases so it will not incur heavy computing operation on the source side (dumping millions of data for example)
+Another approach for me (with a capable team, the right environment and a good budget) is we can deploy Kafka connectors to the sources and install [Debezium](https://debezium.io/documentation/reference/index.html) in our environment. This approach checks for any changes in the database source and then records those changes in the stream which we can respond from as consumers. Every change logged will be moved in our databases so it will not incur heavy computing operation on the source side (dumping millions of data for example)
